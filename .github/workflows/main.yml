@@ -1,0 +1,32 @@
+name: Deploy to Azure VM
+
+on:
+  workflow_dispatch:   # Permite ejecución manual desde la pestaña Actions
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup SSH key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AZURE_VM_KEY }}" > ~/.ssh/azure_vm
+        chmod 600 ~/.ssh/azure_vm
+        ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy files to VM
+      run: |
+        rsync -avz -e "ssh -i ~/.ssh/azure_vm" ./ \
+          ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }}:/home/${{ secrets.AZURE_VM_USER }}/poc-vm-app
+
+    - name: Run app on VM
+      run: |
+        ssh -i ~/.ssh/azure_vm ${{ secrets.AZURE_VM_USER }}@${{ secrets.AZURE_VM_HOST }} "
+          cd ~/poc-vm-app && python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && nohup python main.py > app.log 2>&1 &
+        "
