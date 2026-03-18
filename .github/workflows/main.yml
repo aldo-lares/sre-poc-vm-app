@@ -16,7 +16,7 @@ jobs:
     - name: Setup SSH key
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.AZURE_VM_KEY }}" > ~/.ssh/azure_vm
+        printf "%s\n" "${{ secrets.AZURE_VM_KEY }}" > ~/.ssh/azure_vm
         chmod 600 ~/.ssh/azure_vm
         ssh-keyscan -H ${{ secrets.AZURE_VM_HOST }} >> ~/.ssh/known_hosts
 
